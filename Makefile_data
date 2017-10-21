@@ -1,0 +1,39 @@
+CC:=gcc
+CFLAGS:=-O3 -Wall -pedantic -std=c11 $(shell sdl2-config --cflags)
+LIBS:=-lpng -ljpeg -lm
+
+USERDIR   := .neverball
+DATADIR   := ./data
+LOCALEDIR := ./locale
+
+MAPC_PROG := mapc
+MAPC_SRCS := \
+	share_orig/vec3.c        \
+	share_orig/base_image.c  \
+	share_orig/solid_base.c  \
+	share_orig/binary.c      \
+	share_orig/base_config.c \
+	share_orig/common.c      \
+	share_orig/fs_common.c   \
+	share_orig/fs_stdio.c    \
+	share_orig/fs_png.c      \
+	share_orig/fs_jpg.c      \
+	share_orig/dir.c         \
+	share_orig/array.c       \
+	share_orig/list.c        \
+	share_orig/mapc.c
+MAPS := $(shell find data -name "*.map" \! -name "*.autosave.map")
+SOLS := $(MAPS:%.map=%.sol)
+
+all: $(MAPC_PROG) sols
+
+clean:
+	$(RM) $(MAPC_PROG) $(SOLS)
+
+$(MAPC_PROG): $(MAPC_SRCS)
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
+
+sols: $(SOLS)
+
+%.sol: %.map $(MAPC_PROG)
+	./$(MAPC_PROG) $< data

@@ -103,13 +103,19 @@ void text_input_start(void (*cb)(int))
     text_input[0] = 0;
     CALLBACK(0);
 
+/* Not supported on Wii */
+#if 0
     SDL_StartTextInput();
+#endif
 }
 
 void text_input_stop(void)
 {
     on_text_input = NULL;
+/* Not supported on Wii */
+#if 0
     SDL_StopTextInput();
+#endif
 }
 
 int text_input_str(const char *input, int typing)

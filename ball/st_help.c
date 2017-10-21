@@ -26,6 +26,9 @@
 #include "st_help.h"
 #include "st_shared.h"
 
+/* We're using SDL 1.2 on Wii, which has SDLKey instead of SDL_Keycode. */
+typedef SDLKey SDL_Keycode;
+
 /*---------------------------------------------------------------------------*/
 
 enum

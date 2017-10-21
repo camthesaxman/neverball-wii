@@ -111,7 +111,7 @@ void hud_init(void)
         gui_layout(cam_id, 1, 1);
     }
 
-    if ((fps_id = gui_count(0, 1000, GUI_SML)))
+    if ((fps_id = gui_count(0, 1000, GUI_MED)))
     {
         gui_set_rect(fps_id, GUI_SE);
         gui_layout(fps_id, -1, 1);

@@ -35,6 +35,9 @@ struct video video;
 
 void video_show_cursor()
 {
+/* TODO: implement Wiimote cursor */
+    gui_set_cursor(1);
+#if 0
     if (hmd_stat())
     {
         gui_set_cursor(1);
@@ -45,6 +48,7 @@ void video_show_cursor()
         gui_set_cursor(0);
         SDL_ShowCursor(SDL_ENABLE);
     }
+#endif
 }
 
 /* When the cursor is to be hidden, make sure neither the virtual cursor     */
@@ -52,8 +56,12 @@ void video_show_cursor()
 
 void video_hide_cursor()
 {
+/* TODO: implement Wiimote cursor */
+    gui_set_cursor(0);
+#if 0
     gui_set_cursor(0);
     SDL_ShowCursor(SDL_DISABLE);
+#endif
 }
 
 /*---------------------------------------------------------------------------*/
@@ -87,16 +95,24 @@ void video_snap(const char *path)
 
 /*---------------------------------------------------------------------------*/
 
+/* Not supported on Wii */
+#if 0
 static SDL_Window    *window;
 static SDL_GLContext  context;
+#endif
 
 static void set_window_title(const char *title)
 {
+/* Not supported on Wii */
+#if 0
     SDL_SetWindowTitle(window, title);
+#endif
 }
 
 static void set_window_icon(const char *filename)
 {
+/* Not supported on Wii */
+#if 0
 #if !defined(__APPLE__)
     SDL_Surface *icon;
 
@@ -108,16 +124,60 @@ static void set_window_icon(const char *filename)
     }
 #endif
     return;
+#endif
 }
 
 int video_display(void)
 {
+/* Not supported on Wii */
+#if 0
     if (window)
         return SDL_GetWindowDisplayIndex(window);
     else
         return -1;
+#endif
+    return 0;
 }
 
+int video_init(void)
+{
+    wiigl_create_context();
+    video_mode(1, config_get_d(CONFIG_WIDTH), config_get_d(CONFIG_HEIGHT));
+    return 1;
+}
+
+int video_mode(int f, int w, int h)
+{
+    video.window_w = video.device_w = w;
+    video.window_h = video.device_h = h;
+    video.device_scale = (float) video.device_h / (float) video.window_h;
+    
+    glext_init();
+    
+    glViewport(0, 0, video.device_w, video.device_h);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+
+    glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL,
+                  GL_SEPARATE_SPECULAR_COLOR);
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthFunc(GL_LEQUAL);
+    
+    video_show_cursor();
+    return 1;
+}
+
+#if 0
 int video_init(void)
 {
     if (!video_mode(config_get_d(CONFIG_FULLSCREEN),
@@ -340,6 +400,7 @@ int video_mode(int f, int w, int h)
 
     return 0;
 }
+#endif
 
 /*---------------------------------------------------------------------------*/
 
@@ -365,7 +426,7 @@ void video_swap(void)
 
     snapshot_take();
 
-    SDL_GL_SwapWindow(window);
+    wiigl_swap_buffers();
 
     /* Accumulate time passed and frames rendered. */
 
@@ -408,6 +469,19 @@ static int grabbed = 0;
 
 void video_set_grab(int w)
 {
+    video_hide_cursor();
+    grabbed = 1;
+}
+
+void video_clr_grab(void)
+{
+    video_show_cursor();
+    grabbed = 0;
+}
+
+#if 0
+void video_set_grab(int w)
+{
 #ifdef NDEBUG
     if (w)
     {
@@ -442,6 +516,7 @@ void video_clr_grab(void)
 #endif
     grabbed = 0;
 }
+#endif
 
 int  video_get_grab(void)
 {
@@ -488,6 +563,11 @@ void video_push_persp(float fov, float n, float f)
         {
             glLoadIdentity();
 
+            /* TODO: figure out why the matrix isn't working */
+            GLfloat fH = ftanf(fov / 360.0 * V_PI) * n;
+            GLfloat fW = fH * a;
+            glFrustum(-fW, fW, -fH, fH, n, f);
+            /*
             m[0][0] = c / a;
             m[0][1] =  0.0f;
             m[0][2] =  0.0f;
@@ -506,6 +586,7 @@ void video_push_persp(float fov, float n, float f)
             m[3][3] =  0.0f;
 
             glMultMatrixf(&m[0][0]);
+            */
         }
         glMatrixMode(GL_MODELVIEW);
         {

@@ -226,6 +226,7 @@ void conf_common_paint(int id, float t)
 enum
 {
     VIDEO_FULLSCREEN = GUI_LAST,
+    VIDEO_WIDESCREEN,
     VIDEO_DISPLAY,
     VIDEO_RESOLUTION,
     VIDEO_REFLECTION,
@@ -252,6 +253,15 @@ static int video_action(int tok, int val)
     case GUI_BACK:
         goto_state(video_back);
         video_back = NULL;
+        break;
+
+    case VIDEO_WIDESCREEN:
+        goto_state(&st_null);
+        config_set_d(CONFIG_WIDESCREEN, val);
+        w = val ? 854 : 640;
+        config_set_d(CONFIG_WIDTH, w);
+        r = video_mode(f, w, h);
+        goto_state(&st_video);
         break;
 
     case VIDEO_FULLSCREEN:
@@ -281,10 +291,6 @@ static int video_action(int tok, int val)
         goto_state(&st_null);
         config_set_d(CONFIG_SHADOW, val);
         goto_state(&st_video);
-        break;
-
-    case VIDEO_RESOLUTION:
-        goto_state(&st_resol);
         break;
 
     case VIDEO_VSYNC:
@@ -321,46 +327,15 @@ static int video_gui(void)
         { N_("8x"), 8 },
     };
 
-    int id, jd;
+    int id;
 
     if ((id = gui_vstack(0)))
     {
-        char resolution[sizeof ("12345678 x 12345678")];
-        const char *display;
-        int dpy = config_get_d(CONFIG_DISPLAY);
-
-        sprintf(resolution, "%d x %d",
-                config_get_d(CONFIG_WIDTH),
-                config_get_d(CONFIG_HEIGHT));
-
-        if (!(display = SDL_GetDisplayName(dpy)))
-            display = _("Unknown Display");
-
         conf_header(id, _("Graphics"), GUI_BACK);
 
-        if ((jd = conf_state(id, _("Display"), "Longest Name", VIDEO_DISPLAY)))
-        {
-            gui_set_trunc(jd, TRUNC_TAIL);
-            gui_set_label(jd, display);
-        }
+        conf_toggle(id, _("Widescreen"),   VIDEO_WIDESCREEN,
+                    config_get_d(CONFIG_WIDESCREEN), _("On"), 1, _("Off"), 0);
 
-        conf_toggle(id, _("Fullscreen"),   VIDEO_FULLSCREEN,
-                    config_get_d(CONFIG_FULLSCREEN), _("On"), 1, _("Off"), 0);
-
-        if ((jd = conf_state (id, _("Resolution"), resolution,
-                              VIDEO_RESOLUTION)))
-        {
-            /*
-             * Because we always use the desktop display mode, disable
-             * display mode switching in fullscreen.
-             */
-
-            if (config_get_d(CONFIG_FULLSCREEN))
-            {
-                gui_set_state(jd, GUI_NONE, 0);
-                gui_set_color(jd, gui_gry, gui_gry);
-            }
-        }
 #if ENABLE_HMD
         conf_toggle(id, _("HMD"),          VIDEO_HMD,
                     config_get_d(CONFIG_HMD),        _("On"), 1, _("Off"), 0);
@@ -440,7 +415,7 @@ static int display_gui(void)
 {
     int id, jd;
 
-    int i, n = SDL_GetNumVideoDisplays();
+    int i, n = 0;
 
     if ((id = gui_vstack(0)))
     {
@@ -448,7 +423,7 @@ static int display_gui(void)
 
         for (i = 0; i < n; i++)
         {
-            const char *name = SDL_GetDisplayName(i);
+            const char *name = "dummy";
 
             jd = gui_state(id, name, GUI_SML, DISPLAY_SELECT, i);
             gui_set_hilite(jd, (i == config_get_d(CONFIG_DISPLAY)));

@@ -1,3 +1,9 @@
+# Neverball Wii
+
+This is a work in progress port of Neverball to the Nintendo Wii. The
+game is currently very glitchy and suffers from an abysmal framerate,
+but I'm working on improving it. To build the game, install devkitPPC and run `make` inside of this project directory. To run, create an `/apps/neverball` folder on an SD card and copy `boot.dol`, `dist/wii-hbc/meta.xml`, `dist/wii-hbc/icon.png`, and the `data/` directory to the `/apps/neverball` folder on the SD card. It can be launched from the Homebrew Channel on a homebrew-enabled Wii.
+
 # Neverball
 
 Tilt the  floor to roll a  ball through an obstacle  course within the

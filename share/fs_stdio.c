@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
+#include <fat.h>
 
 #include "fs.h"
 #include "dir.h"
@@ -42,6 +43,7 @@ static List  fs_path;
 
 int fs_init(const char *argv0)
 {
+    fatInitDefault();
     fs_dir_base  = strdup(dir_name(argv0));
     fs_dir_write = NULL;
     fs_path      = NULL;

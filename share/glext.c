@@ -22,52 +22,6 @@ struct gl_info gli;
 
 /*---------------------------------------------------------------------------*/
 
-#if !ENABLE_OPENGLES
-
-PFNGLCLIENTACTIVETEXTURE_PROC    glClientActiveTexture_;
-PFNGLACTIVETEXTURE_PROC          glActiveTexture_;
-
-PFNGLGENBUFFERS_PROC             glGenBuffers_;
-PFNGLBINDBUFFER_PROC             glBindBuffer_;
-PFNGLBUFFERDATA_PROC             glBufferData_;
-PFNGLBUFFERSUBDATA_PROC          glBufferSubData_;
-PFNGLDELETEBUFFERS_PROC          glDeleteBuffers_;
-PFNGLISBUFFER_PROC               glIsBuffer_;
-
-PFNGLPOINTPARAMETERF_PROC        glPointParameterf_;
-PFNGLPOINTPARAMETERFV_PROC       glPointParameterfv_;
-
-PFNGLGETSHADERIV_PROC            glGetShaderiv_;
-PFNGLGETSHADERINFOLOG_PROC       glGetShaderInfoLog_;
-PFNGLGETPROGRAMIV_PROC           glGetProgramiv_;
-PFNGLGETPROGRAMINFOLOG_PROC      glGetProgramInfoLog_;
-PFNGLCREATESHADER_PROC           glCreateShader_;
-PFNGLCREATEPROGRAM_PROC          glCreateProgram_;
-PFNGLSHADERSOURCE_PROC           glShaderSource_;
-PFNGLCOMPILESHADER_PROC          glCompileShader_;
-PFNGLDELETESHADER_PROC           glDeleteShader_;
-PFNGLDELETEPROGRAM_PROC          glDeleteProgram_;
-PFNGLATTACHSHADER_PROC           glAttachShader_;
-PFNGLLINKPROGRAM_PROC            glLinkProgram_;
-PFNGLUSEPROGRAM_PROC             glUseProgram_;
-PFNGLGETUNIFORMLOCATION_PROC     glGetUniformLocation_;
-PFNGLUNIFORM1F_PROC              glUniform1f_;
-PFNGLUNIFORM2F_PROC              glUniform2f_;
-PFNGLUNIFORM3F_PROC              glUniform3f_;
-PFNGLUNIFORM4F_PROC              glUniform4f_;
-
-PFNGLBINDFRAMEBUFFER_PROC        glBindFramebuffer_;
-PFNGLDELETEFRAMEBUFFERS_PROC     glDeleteFramebuffers_;
-PFNGLGENFRAMEBUFFERS_PROC        glGenFramebuffers_;
-PFNGLFRAMEBUFFERTEXTURE2D_PROC   glFramebufferTexture2D_;
-PFNGLCHECKFRAMEBUFFERSTATUS_PROC glCheckFramebufferStatus_;
-
-PFNGLSTRINGMARKERGREMEDY_PROC    glStringMarkerGREMEDY_;
-
-#endif
-
-/*---------------------------------------------------------------------------*/
-
 int glext_check(const char *needle)
 {
     const GLubyte *haystack, *c;
@@ -120,10 +74,28 @@ static void log_opengl(void)
 
 int glext_fail(const char *title, const char *message)
 {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message, NULL);
+    printf("%s: %s\n", title, message);
     return 0;
 }
 
+int glext_init(void)
+{
+    memset(&gli, 0, sizeof (struct gl_info));
+
+    /* Common init. */
+
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE,  &gli.max_texture_size);
+    glGetIntegerv(GL_MAX_TEXTURE_UNITS, &gli.max_texture_units);
+
+    if (glext_check("GL_EXT_texture_filter_anisotropic"))
+        gli.texture_filter_anisotropic = 1;
+
+    log_opengl();
+
+    return 1;
+}
+
+#if 0
 int glext_init(void)
 {
     memset(&gli, 0, sizeof (struct gl_info));
@@ -207,6 +179,7 @@ int glext_init(void)
 
     return 1;
 }
+#endif
 
 /*---------------------------------------------------------------------------*/
 

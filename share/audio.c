@@ -15,8 +15,8 @@
 #include <SDL.h>
 
 #define OV_EXCLUDE_STATIC_CALLBACKS
-#include <vorbis/codec.h>
-#include <vorbis/vorbisfile.h>
+#include <tremor/ivorbiscodec.h>
+#include <tremor/ivorbisfile.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -29,7 +29,9 @@
 
 /*---------------------------------------------------------------------------*/
 
-#define AUDIO_RATE 44100
+/* I've downsampled the tracks from 44100 Hz to 32000 Hz because the Wii's audio
+ * library can only support 32000 or 48000 Hz audio, nothing in between. */
+#define AUDIO_RATE 32000
 #define AUDIO_CHAN 2
 
 struct voice
@@ -50,6 +52,8 @@ static float music_vol   = 1.0f;
 
 static SDL_AudioSpec spec;
 
+#define VOICE_CACHE_COUNT 16
+static struct voice *voice_cache[VOICE_CACHE_COUNT];
 static struct voice *music  = NULL;
 static struct voice *queue  = NULL;
 static struct voice *voices = NULL;
@@ -92,7 +96,7 @@ static int voice_step(struct voice *V, float volume, Uint8 *stream, int length)
     {
         /* Read audio from the stream. */
 
-        if ((n = (int) ov_read(&V->vf, ibuf, r, order, 2, 1, &b)) > 0)
+        if ((n = (int) ov_read(&V->vf, ibuf, r, &b)) > 0)
         {
             /* Mix mono audio. */
 
@@ -144,10 +148,38 @@ static int voice_step(struct voice *V, float volume, Uint8 *stream, int length)
     return 0;
 }
 
+static void voice_free(struct voice *V)
+{
+    ov_clear(&V->vf);
+
+    free(V->name);
+    free(V);
+}
+
 static struct voice *voice_init(const char *filename, float a)
 {
     struct voice *V;
     fs_file      fp;
+    int i;
+
+    /* Search cache for voice */
+
+    for (i = 0; i < VOICE_CACHE_COUNT; i++)
+    {
+        if (voice_cache[i] != NULL)
+        {
+            if (strcmp(filename, voice_cache[i]->name) == 0)
+            {
+                V = voice_cache[i];
+                V->amp = a;
+                V->damp = 0;
+                V->play = 1;
+                V->loop = 0;
+                ov_raw_seek(&V->vf, 0);
+                return V;
+            }
+        }
+    }
 
     /* Allocate and initialize a new voice structure. */
 
@@ -181,15 +213,30 @@ static struct voice *voice_init(const char *filename, float a)
             else fs_close(fp);
         }
     }
+
+    /* Put it in the cache */
+
+    for (i = 0; i < VOICE_CACHE_COUNT; i++)
+    {
+        if (voice_cache[i] == NULL)
+        {
+            voice_cache[i] = V;
+            return V;
+        }
+    }
+
+    /* Replace a voice that isn't playing */
+
+    for (i = 0; i < VOICE_CACHE_COUNT; i++)
+    {
+        if (voice_cache[i] != NULL && !voice_cache[i]->play)
+        {
+            voice_free(voice_cache[i]);
+            voice_cache[i] = V;
+            return V;
+        }
+    }
     return V;
-}
-
-static void voice_free(struct voice *V)
-{
-    ov_clear(&V->vf);
-
-    free(V->name);
-    free(V);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -213,7 +260,8 @@ static void audio_step(void *data, Uint8 *stream, int length)
 
         if (music->amp <= 0.0f && music->damp < 0.0f && queue)
         {
-            voice_free(music);
+            //voice_free(music);
+            music->play = 0;
             music = queue;
             queue = NULL;
         }
@@ -236,7 +284,8 @@ static void audio_step(void *data, Uint8 *stream, int length)
             else
                 V = voices  = V->next;
 
-            voice_free(T);
+            T->play = 0;
+            //voice_free(T);
         }
         else
         {
@@ -381,7 +430,8 @@ void audio_music_stop(void)
         {
             if (music)
             {
-                voice_free(music);
+                music->play = 0;
+                //voice_free(music);
             }
             music = NULL;
         }
@@ -428,7 +478,8 @@ void audio_music_fade_to(float t, const char *filename)
 
             if (queue)
             {
-                voice_free(queue);
+                queue->play = 0;
+                //voice_free(queue);
                 queue = NULL;
             }
 

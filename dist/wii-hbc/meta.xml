@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  <app version="1">
+    <name>Neverball</name>
+    <coder>camthesaxman</coder>
+    <version></version>
+    <release_date>2017</release_date>
+    <short_description>Tilt the floor to roll a ball through an obstacle course before time runs out.</short_description>
+    <long_description>Tilt the floor to roll a ball through an obstacle course within the given time. If the ball falls or time expires, a ball is lost.
+
+Collect coins to unlock the exit and earn extra balls. Red coins are worth 5. Blue coins are worth 10. A ball is awarded for 100 coins.
+
+This is an incomplete port of Neverball to the Wii. The framerate sucks and many graphical features are not implemented yet. I hope to improve this in the future.</long_description>
+  </app>

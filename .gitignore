@@ -18,3 +18,7 @@
 /mapc.exe
 /contrib/curve.exe
 /*.dll
+*.elf
+*.dol
+sd.raw
+/build

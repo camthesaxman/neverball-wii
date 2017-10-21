@@ -341,7 +341,9 @@ static void game_draw_fore(struct s_rend *rend,
                 sol_bill(draw, rend, M, t);
 
                 game_draw_beams(rend, gd);
-                part_draw_coin(rend);
+                // HACK! reset the color to white
+                glColor4ub(255, 255, 255, 255);
+                //part_draw_coin(rend);
             }
             glEnable(GL_LIGHTING);
 

@@ -17,6 +17,8 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <string.h>
+#include <gccore.h>
+#include <wiiuse/wpad.h>
 
 #include "version.h"
 #include "glext.h"
@@ -164,6 +166,7 @@ static int handle_key_up(SDL_Event *e)
     return d;
 }
 
+#if 0
 static int loop(void)
 {
     SDL_Event e;
@@ -215,7 +218,9 @@ static int loop(void)
         case SDL_KEYUP:
             d = handle_key_up(&e);
             break;
-
+        
+/* Not supported on Wii */
+#if 0
         case SDL_WINDOWEVENT:
             switch (e.window.event)
             {
@@ -248,6 +253,7 @@ static int loop(void)
         case SDL_TEXTINPUT:
             text_input_str(e.text.text, 1);
             break;
+#endif
 
         case SDL_JOYAXISMOTION:
             st_stick(e.jaxis.axis, JOY_VALUE(e.jaxis.value));
@@ -261,9 +267,12 @@ static int loop(void)
             d = st_buttn(e.jbutton.button, 0);
             break;
 
+/* Not supported on Wii */
+#if 0
         case SDL_MOUSEWHEEL:
             st_wheel(e.wheel.x, e.wheel.y);
             break;
+#endif
         }
     }
 
@@ -312,6 +321,162 @@ static int loop(void)
     }
 
     return d;
+}
+#endif
+
+static s8 prevCtrlStickX = 0;
+static s8 prevCtrlStickY = 0;
+static s8 prevCStickX = 0;
+static s8 prevCStickY = 0;
+static int prevWiiX = 0;
+static int prevWiiY = 0;
+static int handleWiimoteTilt = 0;
+
+static int clamp_stick_axis(int val)
+{
+    if (val > 0)
+    {
+        if (val > 16)
+            return val - 16;
+        else
+            return 0;
+    }
+    if (val < 0)
+    {
+        if (val < -16)
+            return val + 16;
+        else
+            return 0;
+    }
+    return 0;
+}
+
+int loop(void)
+{
+    u16 gcButtonsPressed;
+    u16 gcButtonsReleased;
+    s16 ctrlStickX;
+    s16 ctrlStickY;
+    s16 cStickX;
+    s16 cStickY;
+    
+    WPADData *wpad;
+    u16 wiiButtonsPressed;
+    u16 wiiButtonsReleased;
+    u16 wiiButtonsHeld;
+    
+    PAD_ScanPads();
+    WPAD_ScanPads();
+    
+    gcButtonsPressed = PAD_ButtonsDown(0);
+    wiiButtonsPressed = WPAD_ButtonsDown(0);
+    if (gcButtonsPressed)
+        handleWiimoteTilt = 0;
+    if (wiiButtonsPressed)
+        handleWiimoteTilt = 1;
+    if      (gcButtonsPressed & PAD_BUTTON_A || wiiButtonsPressed & WPAD_BUTTON_A)
+        return st_buttn(0, 1);
+    else if (gcButtonsPressed & PAD_BUTTON_B || wiiButtonsPressed & WPAD_BUTTON_B)
+        return st_buttn(1, 1);
+    else if (gcButtonsPressed & PAD_BUTTON_X || wiiButtonsPressed & WPAD_BUTTON_1)
+        return st_buttn(2, 1);
+    else if (gcButtonsPressed & PAD_BUTTON_Y || wiiButtonsPressed & WPAD_BUTTON_2)
+        return st_buttn(3, 1);
+    else if (gcButtonsPressed & PAD_BUTTON_START || wiiButtonsPressed & WPAD_BUTTON_PLUS)
+        return st_buttn(8, 1);
+    else if (wiiButtonsPressed & WPAD_BUTTON_LEFT)
+    {
+        st_stick(2, -1);
+        return 1;
+    }
+    else if (wiiButtonsPressed & WPAD_BUTTON_RIGHT)
+    {
+        st_stick(2, +1);
+        return 1;
+    }
+    else if (gcButtonsPressed & PAD_TRIGGER_Z)
+        config_tgl_d(CONFIG_FPS);
+
+    gcButtonsReleased = PAD_ButtonsUp(0);
+    wiiButtonsReleased = WPAD_ButtonsUp(0);
+    if      (gcButtonsReleased & PAD_BUTTON_A || wiiButtonsReleased & WPAD_BUTTON_A)
+        return st_buttn(0, 0);
+    else if (gcButtonsReleased & PAD_BUTTON_B || wiiButtonsReleased & WPAD_BUTTON_B)
+        return st_buttn(1, 0);
+    else if (gcButtonsReleased & PAD_BUTTON_X || wiiButtonsReleased & WPAD_BUTTON_1)
+        return st_buttn(2, 0);
+    else if (gcButtonsReleased & PAD_BUTTON_Y || wiiButtonsReleased & WPAD_BUTTON_2)
+        return st_buttn(3, 0);
+    else if (gcButtonsReleased & PAD_BUTTON_START || wiiButtonsReleased & WPAD_BUTTON_2)
+        return st_buttn(8, 0);
+    else if (wiiButtonsReleased & WPAD_BUTTON_LEFT)
+    {
+        st_stick(2, 0);
+        return 1;
+    }
+    else if (wiiButtonsReleased & WPAD_BUTTON_RIGHT)
+    {
+        st_stick(2, 0);
+        return 1;
+    }
+
+    ctrlStickX =  clamp_stick_axis(PAD_StickX(0));
+    ctrlStickY = -clamp_stick_axis(PAD_StickY(0));
+    if (ctrlStickX != prevCtrlStickX)
+    {
+        st_stick(0, (float)(ctrlStickX << 8));
+        prevCtrlStickX = ctrlStickX;
+    }
+    if (ctrlStickY != prevCtrlStickY)
+    {
+        st_stick(1, (float)(ctrlStickY << 8));
+        prevCtrlStickY = ctrlStickY;
+    }
+
+    cStickX =  clamp_stick_axis(PAD_SubStickX(0));
+    cStickY = -clamp_stick_axis(PAD_SubStickY(0));
+    if (cStickX != prevCStickX)
+    {
+        st_stick(2, (float)(cStickX) / 50.0);
+        prevCStickX = cStickX;
+    }
+    if (cStickY != prevCStickY)
+    {
+        st_stick(3, (float)(cStickY) / 50.0);
+        prevCStickY = cStickY;
+    }
+    
+    wpad = WPAD_Data(WPAD_CHAN_0);
+    
+    if (wpad->ir.valid)
+    {
+        int xrel = wpad->ir.x - prevWiiX;
+        int yrel = wpad->ir.y - prevWiiY;
+
+        /* Convert to OpenGL coordinates. */
+
+        int ax = +wpad->ir.x;
+        int ay = -wpad->ir.y + video.window_h;
+        int dx = +xrel;
+        int dy = (config_get_d(CONFIG_MOUSE_INVERT) ?
+              +yrel : -yrel);
+
+        /* Convert to pixels. */
+
+        ax = ROUND(ax * video.device_scale);
+        ay = ROUND(ay * video.device_scale);
+        dx = ROUND(dx * video.device_scale);
+        dy = ROUND(dy * video.device_scale);
+
+        st_point(ax, ay, dx, dy);
+        prevWiiX = ax;
+        prevWiiY = ay;
+    }
+    
+    if (handleWiimoteTilt)
+        st_angle(wpad->orient.pitch, wpad->orient.roll);
+    
+    return 1;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -481,6 +646,19 @@ int main(int argc, char *argv[])
     SDL_Joystick *joy = NULL;
     int t1, t0;
 
+    /* HACK! When run in Dolphin, argc is set to zero and argv is NULL.
+     * This abomination must be corrected. */
+    if (argc == 0)
+    {
+        static char *argv_[1];
+        argv = argv_;
+        argc = 1;
+    }
+    /* HACK! We need to make sure we have the right path when booting from the
+     * network (via wiiload). */
+    static char argv0[] = "/apps/neverball/boot.dol";
+    argv[0] = argv0;
+    
     if (!fs_init(argv[0]))
     {
         fprintf(stderr, "Failure to initialize virtual file system (%s)\n",
@@ -496,11 +674,13 @@ int main(int argc, char *argv[])
 
     /* Initialize SDL. */
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) == -1)
+    /*
+    if (SDL_Init(SDL_INIT_AUDIO) == -1)
     {
         log_printf("Failure to initialize SDL (%s)\n", SDL_GetError());
         return 1;
     }
+    */
 
     /* Intitialize configuration. */
 
@@ -513,12 +693,14 @@ int main(int argc, char *argv[])
 
     /* Initialize joystick. */
 
+    /*
     if (config_get_d(CONFIG_JOYSTICK) && SDL_NumJoysticks() > 0)
     {
         joy = SDL_JoystickOpen(config_get_d(CONFIG_JOYSTICK_DEVICE));
         if (joy)
             SDL_JoystickEventState(SDL_ENABLE);
     }
+    */
 
     /* Initialize audio. */
 
@@ -529,6 +711,13 @@ int main(int argc, char *argv[])
 
     if (!video_init())
         return 1;
+        
+    /* Initialize Wiimote and GameCube controller */
+    
+    PAD_Init();
+    WPAD_Init();
+    WPAD_SetDataFormat(WPAD_CHAN_ALL, WPAD_FMT_BTNS_ACC_IR);
+    WPAD_SetVRes(WPAD_CHAN_ALL, video.window_w, video.window_h);
 
     /* Material system. */
 

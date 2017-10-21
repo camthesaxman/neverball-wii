@@ -50,6 +50,7 @@ static const char *pick_data_path(const char *arg_data_path)
 
 static const char *pick_home_path(void)
 {
+#if 0
 #ifdef _WIN32
     static char path[MAX_PATH];
 
@@ -72,6 +73,9 @@ static const char *pick_home_path(void)
 
     return (path = getenv("HOME")) ? path : fs_base_dir();
 #endif
+#endif
+    /* Just use the root directory on Wii */
+    return "/";
 }
 
 void config_paths(const char *arg_data_path)

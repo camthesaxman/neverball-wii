@@ -23,10 +23,14 @@
 #include "common.h"
 #include "fs.h"
 
+/* We're using SDL 1.2 on Wii, which has SDLKey instead of SDL_Keycode. */
+typedef SDLKey SDL_Keycode;
+
 /*---------------------------------------------------------------------------*/
 
 /* Integer options. */
 
+int CONFIG_WIDESCREEN;
 int CONFIG_FULLSCREEN;
 int CONFIG_DISPLAY;
 int CONFIG_WIDTH;
@@ -129,19 +133,20 @@ static struct
     const int   def;
     int         cur;
 } option_d[] = {
+    { &CONFIG_WIDESCREEN,   "widescreen",   0 },
     { &CONFIG_FULLSCREEN,   "fullscreen",   0 },
     { &CONFIG_DISPLAY,      "display",      0 },
-    { &CONFIG_WIDTH,        "width",        800 },
-    { &CONFIG_HEIGHT,       "height",       600 },
+    { &CONFIG_WIDTH,        "width",        640 },
+    { &CONFIG_HEIGHT,       "height",       480 },
     { &CONFIG_STEREO,       "stereo",       0 },
     { &CONFIG_CAMERA,       "camera",       0 },
     { &CONFIG_TEXTURES,     "textures",     1 },
-    { &CONFIG_REFLECTION,   "reflection",   1 },
+    { &CONFIG_REFLECTION,   "reflection",   0 },
     { &CONFIG_MULTISAMPLE,  "multisample",  0 },
     { &CONFIG_MIPMAP,       "mipmap",       1 },
     { &CONFIG_ANISO,        "aniso",        8 },
     { &CONFIG_BACKGROUND,   "background",   1 },
-    { &CONFIG_SHADOW,       "shadow",       1 },
+    { &CONFIG_SHADOW,       "shadow",       0 },
     { &CONFIG_AUDIO_BUFF,   "audio_buff",   AUDIO_BUFF_HI },
     { &CONFIG_MOUSE_SENSE,  "mouse_sense",  300 },
     { &CONFIG_MOUSE_RESPONSE, "mouse_response", 50 },
@@ -239,7 +244,7 @@ static int dirty = 0;
 
 static void config_key(const char *s, int i)
 {
-    SDL_Keycode c = SDL_GetKeyFromName(s);
+    SDL_Keycode c = 0; //SDL_GetKeyFromName(s);
 
     if (c == SDLK_UNKNOWN)
         config_set_d(i, option_d[i].def);
@@ -342,7 +347,7 @@ void config_load(void)
 {
     fs_file fh;
 
-    SDL_assert(SDL_WasInit(SDL_INIT_VIDEO));
+    //SDL_assert(SDL_WasInit(SDL_INIT_VIDEO));
 
     if ((fh = fs_open(USER_CONFIG_FILE, "r")))
     {
@@ -419,7 +424,7 @@ void config_save(void)
 {
     fs_file fh;
 
-    SDL_assert(SDL_WasInit(SDL_INIT_VIDEO));
+    //SDL_assert(SDL_WasInit(SDL_INIT_VIDEO));
 
     if (dirty && (fh = fs_open(USER_CONFIG_FILE, "w")))
     {

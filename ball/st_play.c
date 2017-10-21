@@ -421,7 +421,8 @@ static void play_loop_timer(int id, float dt)
 
 static void play_loop_point(int id, int x, int y, int dx, int dy)
 {
-    game_set_pos(dx, dy);
+    /* Ignore point events on Wii */
+    //game_set_pos(dx, dy);
 }
 
 static void play_loop_stick(int id, int a, float v, int bump)
